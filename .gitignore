@@ -45,3 +45,7 @@ build/
 
 ### Scala ###
 .bsp/
+/sources/1.txt
+/sources/1_test.txt
+/.idea/sbt.xml
+/src/main/scala/sources.scala
