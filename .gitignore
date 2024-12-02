@@ -4,6 +4,8 @@ target/
 !**/src/test/**/target/
 
 ### IntelliJ IDEA ###
+.bsp
+.idea
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml
@@ -45,7 +47,6 @@ build/
 
 ### Scala ###
 .bsp/
-/sources/1.txt
-/sources/1_test.txt
+/sources/*
 /.idea/sbt.xml
-/src/main/scala/sources.scala
+
