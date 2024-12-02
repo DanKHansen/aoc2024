@@ -20,7 +20,6 @@ def day2(): Unit = {
          isReportStillSafe(l.tail)
          // try to remove one level at a time and re-check the remaining report
          // if all possibilities have been exhausted return false
-         //false
 
 
    val first = reports.map(isReportSafe).count(_ == true)
