@@ -14,10 +14,7 @@ def day2(): Unit = {
    def isReportStillSafe(report: List[Int]): Boolean =
       isReportSafe(report) || report.indices.exists(idx => isReportSafe(report.patch(idx, Nil, 1)))
 
-   val first = reports.map(isReportSafe).count(_ == true)
-   val second = reports.map(isReportStillSafe).count(_ == true)
-
-   println(first)
-   println(second)
+   println(s"1: ${reports.map(isReportSafe).count(_ == true)}")
+   println(s"2: ${reports.map(isReportStillSafe).count(_ == true)}")
 
 }

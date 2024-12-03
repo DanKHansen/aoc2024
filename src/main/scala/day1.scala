@@ -4,13 +4,11 @@ def day1(): Unit = {
    val left = Array.ofDim[Int](data.length)
    val right = Array.ofDim[Int](data.length)
    data.indices
-      .foreach { i =>
+      .foreach{i =>
          left(i) = data(i).head
          right(i) = data(i).last
       }
-   val first = left.sorted.zip(right.sorted).map((x, y) => math.abs(x - y)).sum
-   val second = data.indices.map(idx => right.count(_ == left(idx)) * left(idx)).sum
+   println(s"1: ${left.sorted.zip(right.sorted).map((x, y) => math.abs(x - y)).sum}")
+   println(s"2: ${data.indices.map(idx => right.count(_ == left(idx)) * left(idx)).sum}")
 
-   println(first)
-   println(second)
 }
