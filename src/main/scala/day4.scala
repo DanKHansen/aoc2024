@@ -8,25 +8,27 @@ def day4(): Unit = {
    val directions = List("n", "ne", "e", "se", "s", "sw", "w", "nw")
    val directions2 = directions.filter(_.length == 2)
 
-   println(s"1: ${countXmas(lines, positions, directions, "xmas", grid)}")
-   println(s"2: ${countMas(lines, positions, directions2, "mas", grid)}")
+   println(s"1: ${countXmas(directions, "xmas", grid)}")
+   println(s"2: ${countWords(directions2, "mas", grid)}")
 
-   def countMas(lin: Range, pos: Range, dirs: List[String], word: String, grid: List[String]): Int =
+   def countWords(dirs: List[String], word: String, grid: List[String]) =
+      val rng = -word.length / 2 to word.length / 2
       (for
-         l <- lin
-         p <- pos
-      yield find(grid, dirs, -word.length / 2 to word.length / 2, l, p).map(v =>
-         if (v.mkString.contains(word.toUpperCase) || v.mkString.contains(word.reverse.toUpperCase)) true else false))
-         .count(l => l.forall(_ == true))
+         l <- grid.indices
+         p <- grid.head.indices
+      yield find(grid, dirs, rng, l, p))
+         .map(l => l.count(_ == word.toUpperCase.toVector) == 2 && l.count(_ == word.toUpperCase.toVector) == 2)
+         .count(_ == true)
 
-   def countXmas(lin: Range, pos: Range, dirs: List[String], word: String, grid: List[String]): Int =
+   def countXmas(dirs: List[String], word: String, grid: List[String]): Int =
+      val rng = 0 until word.length
       (for
-         l <- lin
-         p <- pos
-      yield find(grid, dirs, 0 until word.length, l, p).map(v =>
-         if (v.mkString == word.toUpperCase) true else false)).flatten.count(_ == true)
+         l <- grid.indices
+         p <- grid.head.indices
+      yield find(grid, dirs, rng, l, p).map(v => v.mkString == word.toUpperCase)).flatten
+         .count(_ == true)
 
-   def star(pos: Int, lin: Int, rng:Range): Map[String, Seq[(Int, Int)]] =
+   def star(pos: Int, lin: Int, rng: Range): Map[String, Seq[(Int, Int)]] =
       Map(
         "n" -> (for i <- rng yield (pos, lin - i)),
         "ne" -> (for i <- rng yield (pos + i, lin - i)),
@@ -38,7 +40,7 @@ def day4(): Unit = {
         "nw" -> (for i <- rng yield (pos - i, lin - i))
       )
 
-   def find(grid: List[String], dirs: List[String], rng:Range, lin: Int, pos: Int): List[IndexedSeq[Char]] =
+   def find(grid: List[String], dirs: List[String], rng: Range, lin: Int, pos: Int): List[IndexedSeq[Char]] =
       dirs.map { dir =>
          val v = star(pos, lin, rng).getOrElse(dir, Nil)
          for i <- v.indices
