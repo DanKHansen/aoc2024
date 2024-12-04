@@ -9,25 +9,19 @@ def day4(): Unit = {
       val wordUpper = word.toUpperCase
       val rng = -word.length / 2 to word.length / 2
       grid.indices
-         .flatMap(l =>
-            grid.head.indices
-               .map(p =>
-                  val found = find(grid, dirs, rng, l, p)
-                  (p, found))
-               .map { case (_, found) =>
-                  found.count(_ == wordUpper.toVector)
-               })
+         .flatMap(l => grid.head.indices.map(p => find(grid, dirs, rng, l, p)))
+         .map(l => l.count(_ == wordUpper.toVector))
          .count(_ == 2)
 
-   def countXmas(dirs: List[String], word: String, grid: List[String]): Int = {
+   def countXmas(dirs: List[String], word: String, grid: List[String]): Int =
       val wordUpper = word.toUpperCase
       val rng = 0 until word.length
       grid.indices.flatMap { l =>
          grid.head.indices.flatMap { p =>
-            find(grid, dirs, rng, l, p).filter(_.mkString == wordUpper)
+            find(grid, dirs, rng, l, p)
+               .filter(_.mkString == wordUpper)
          }
       }.size
-   }
 
    def star(pos: Int, lin: Int, rng: Range): Map[String, Seq[(Int, Int)]] =
       directions.map { dir =>
@@ -45,10 +39,11 @@ def day4(): Unit = {
 
    def find(grid: List[String], dirs: List[String], rng: Range, lin: Int, pos: Int): List[Seq[Char]] =
       dirs.map { dir =>
-         val v = star(pos, lin, rng).getOrElse(dir, Nil)
-         v.map { case (x, y) =>
-            Try(grid(y)(x)).getOrElse(' ')
-         }
+         star(pos, lin, rng)
+            .getOrElse(dir, Nil)
+            .map { case (x, y) =>
+               Try(grid(y)(x)).getOrElse(' ')
+            }
       }
 
    println(s"1: ${countXmas(directions, "xmas", grid)}")
