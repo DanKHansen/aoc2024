@@ -2,7 +2,7 @@ import scala.annotation.tailrec
 
 @main
 def day5(): Unit = {
-   val source = getSource("5_test.txt")
+   val source = getSource("5.txt")
    val rules: Vector[(Int, Int)] =
       source
          .takeWhile(_ != "")
