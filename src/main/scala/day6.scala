@@ -4,12 +4,9 @@ import scala.annotation.tailrec
 def day6(): Unit = {
    type Position = (Int, Int)
    enum Direction:
-      case North
-      case South
-      case East
-      case West
+      case North, South, East, West
 
-   val src = getSource("6_test.txt")
+   val src = getSource("6.txt")
    val start: String = src.filter(_.contains('^')).mkString
    val linIndex = src.indexOf(start)
    val posIndex = start.indexOf('^')
@@ -31,7 +28,7 @@ def day6(): Unit = {
       case Direction.West  => Direction.North
 
    @tailrec
-   def walk(curDir: Direction, curPos: Position, step: Int): Int = {
+   def walk(curDir: Direction, curPos: Position, visited: Set[Position]): Int = {
       val (lin, pos) = curPos
       val nextStep = curDir match
          case Direction.North => (lin - 1, pos)
@@ -39,14 +36,14 @@ def day6(): Unit = {
          case Direction.East  => (lin, pos + 1)
          case Direction.West  => (lin, pos - 1)
 
-      if (isPosOutOfBounds(nextStep)) step
-      else if (isNextStepClear(nextStep)) walk(turnRight(curDir), curPos, step)
-      else walk(curDir, nextStep, step + 1)
+      if (isPosOutOfBounds(nextStep)) visited.size + 1
+      else if (isNextStepClear(nextStep))
+         walk(turnRight(curDir), curPos, visited)
+      else
+         walk(curDir, nextStep, visited + curPos)
    }
 
-   // number of steps must be "Distinct" .....
-
-   println(s"1: ${walk(Direction.North, startPos, 0)}")
+   println(s"1: ${walk(Direction.North, startPos, Set.empty)}")
    // println(s"2: ${}")
 
 }
