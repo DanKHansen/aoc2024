@@ -1,5 +1,4 @@
 import scala.annotation.tailrec
-
 @main
 def day6(): Unit = {
    type Position = (Int, Int)
@@ -26,8 +25,22 @@ def day6(): Unit = {
       case Direction.East  => Direction.South
       case Direction.West  => Direction.North
 
+   def isLoop(l: List[Position]): Boolean =
+
+      if l.length < 4 then false else {
+         val x = l.take(2)
+         val slope = (x.last._2 - x.head._2) / (x.last._1 - x.head._1)
+         slope == 0}
+
+   def modGrid = grid.updated(6, grid(6).updated(3, 'X')) // this should initiate a loop
+
    @tailrec
-   def walk(curDir: Direction, curPos: Position, visited: Set[Position], g: List[String] = grid): Int = {
+   def walk(
+       curDir: Direction,
+       curPos: Position,
+       visited: List[Position],
+       g: List[String] = grid,
+       loopCounter: Int = 0): (Int, Int) = {
       val (y, x) = curPos
       val nextStep = curDir match
          case Direction.North => (y - 1, x)
@@ -35,17 +48,16 @@ def day6(): Unit = {
          case Direction.East  => (y, x + 1)
          case Direction.West  => (y, x - 1)
 
-      if (isPosOutOfBounds(nextStep, g)) visited.size + 1
-      else if (isNextStepClear(nextStep, g))
-         walk(turnRight(curDir), curPos, visited, g)
-      else
-         walk(curDir, nextStep, visited + curPos, g)
+      if isPosOutOfBounds(nextStep, g) then (visited.toSet.size + 1, loopCounter)
+      else if isNextStepClear(nextStep, g) then {
+         println(visited)
+         println(isLoop(visited))
+         walk(turnRight(curDir), curPos, visited, g)}
+      else walk(curDir, nextStep, curPos +: visited, g)
+
    }
 
-
-   val modGrid = grid
-
-   println(s"1: ${walk(Direction.North, startPos, Set.empty)}")
-   println(s"2: ${walk(Direction.North, startPos, Set.empty, modGrid)}")
+   //println(s"1: ${walk(Direction.North, startPos, Nil)._1}")
+   println(s"2: ${walk(Direction.North, startPos, Nil, modGrid)._2}")
 
 }
