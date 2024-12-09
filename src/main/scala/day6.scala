@@ -1,4 +1,9 @@
 import scala.annotation.tailrec
+import scala.concurrent.{Future, Await}
+
+import scala.concurrent.duration._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 @main
 def day6(): Unit = {
    type Position = (Int, Int)
@@ -14,7 +19,7 @@ def day6(): Unit = {
    val grid = src.updated(lin_Idx, src(lin_Idx).updated(pos_Idx, '.'))
 
    def isPosOutOfBounds(p: Position, g: List[String] = grid): Boolean =
-      p._1 > g.indices.last || p._1 < 0 || p._2 > g.head.indices.last || p._2 < 0
+      p._1 < 0 || p._1 >= g.length || p._2 < 0 || p._2 >= g.head.length
 
    def isNextStepClear(p: Position, g: List[String] = grid): Boolean =
       g(p._1)(p._2) != '.'
@@ -26,7 +31,7 @@ def day6(): Unit = {
       case Direction.West  => Direction.North
 
    def isLoop(m: Map[Position, Int]): Boolean =
-      m.values.count(_ > 2) >= 2
+      m.values.exists(_ > 4)
 
    def modGrid(p: Position) = grid.updated(p._1, grid(p._1).updated(p._2, 'X'))
 
@@ -43,20 +48,28 @@ def day6(): Unit = {
          case Direction.South => (y + 1, x)
          case Direction.East  => (y, x + 1)
          case Direction.West  => (y, x - 1)
-      if isPosOutOfBounds(nextStep, g) then (visited.updated(curPos, visited.getOrElse(curPos, 0) + 1), false)
-      else if isLoop(visited) then (visited, true)
+      if isLoop(visited) then (visited, true)
+      else if isPosOutOfBounds(nextStep, g) then (visited.updated(curPos, visited.getOrElse(curPos, 0) + 1), false)
       else if isNextStepClear(nextStep, g) then walk(turnRight(curDir), curPos, visited, g)
       else walk(curDir, nextStep, visited.updated(curPos, visited.getOrElse(curPos, 0) + 1), g)
 
    }
 
-   val path = walk(Direction.North, startPos, Map(startPos -> 0))
+   val (visitedPos, _) = walk(Direction.North, startPos, Map(startPos -> 0))
 
-   val r = path._1.keySet
+   val futures = visitedPos.keySet
       .filterNot(_ == startPos)
-      .map(blockPos => (blockPos, walk(Direction.North, startPos, Map(startPos -> -1), modGrid(blockPos))))
+      .map { blockPos =>
+         Future {
+            (blockPos, walk(Direction.North, startPos, Map(startPos -> 0), modGrid(blockPos)))
+         }
+      }
 
-   println(s"1: ${path._1.keySet.size}")
-   println(s"2: ${r.count(res => res._2._2)}")
+   val results = Future.sequence(futures)
+   val finalResults = Await.result(results, 60.seconds)
+   val loops = finalResults.count(x => x._2._2)
+
+   println(s"1: ${visitedPos.size}")
+   println(s"2: $loops")
 
 }
