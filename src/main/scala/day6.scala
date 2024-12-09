@@ -10,7 +10,7 @@ def day6(): Unit = {
    enum Direction:
       case North, South, East, West
 
-   val src = getSource("6.txt")
+   val src = getSource("6_test.txt")
    val turtle = src.find(_.contains('^')).get
    val lin_Idx = src.indexOf(turtle)
    val pos_Idx = turtle.indexOf('^')
@@ -31,6 +31,7 @@ def day6(): Unit = {
       case Direction.West  => Direction.North
 
    def isLoop(m: Map[Position, Int]): Boolean =
+      // hardcoded vale of crossings in original path (4) ...
       m.values.exists(_ > 4)
 
    def modGrid(p: Position) = grid.updated(p._1, grid(p._1).updated(p._2, 'X'))
@@ -57,6 +58,8 @@ def day6(): Unit = {
 
    val (visitedPos, _) = walk(Direction.North, startPos, Map(startPos -> 0))
 
+   val crossings = visitedPos.count(_._2 >= 2)
+
    val futures = visitedPos.keySet
       .filterNot(_ == startPos)
       .map { blockPos =>
@@ -69,7 +72,7 @@ def day6(): Unit = {
    val finalResults = Await.result(results, 60.seconds)
    val loops = finalResults.count(x => x._2._2)
 
-   println(s"1: ${visitedPos.size}")
+   println(s"1: ${(visitedPos.size, crossings)}")
    println(s"2: $loops")
 
 }
