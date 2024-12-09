@@ -5,7 +5,7 @@ def day6(): Unit = {
    enum Direction:
       case North, South, East, West
 
-   val src = getSource("6_test.txt")
+   val src = getSource("6.txt")
    val turtle = src.find(_.contains('^')).get
    val lin_Idx = src.indexOf(turtle)
    val pos_Idx = turtle.indexOf('^')
@@ -25,39 +25,38 @@ def day6(): Unit = {
       case Direction.East  => Direction.South
       case Direction.West  => Direction.North
 
-   def isLoop(l: List[Position]): Boolean =
+   def isLoop(m: Map[Position, Int]): Boolean =
+      m.values.count(_ > 2) >= 2
 
-      if l.length < 4 then false else {
-         val x = l.take(2)
-         val slope = (x.last._2 - x.head._2) / (x.last._1 - x.head._1)
-         slope == 0}
-
-   def modGrid = grid.updated(6, grid(6).updated(3, 'X')) // this should initiate a loop
+   def modGrid(p: Position) = grid.updated(p._1, grid(p._1).updated(p._2, 'X'))
 
    @tailrec
    def walk(
        curDir: Direction,
        curPos: Position,
-       visited: List[Position],
-       g: List[String] = grid,
-       loopCounter: Int = 0): (Int, Int) = {
+       visited: Map[Position, Int],
+       g: List[String] = grid
+   ): (Map[Position, Int], Boolean) = {
       val (y, x) = curPos
       val nextStep = curDir match
          case Direction.North => (y - 1, x)
          case Direction.South => (y + 1, x)
          case Direction.East  => (y, x + 1)
          case Direction.West  => (y, x - 1)
-
-      if isPosOutOfBounds(nextStep, g) then (visited.toSet.size + 1, loopCounter)
-      else if isNextStepClear(nextStep, g) then {
-         println(visited)
-         println(isLoop(visited))
-         walk(turnRight(curDir), curPos, visited, g)}
-      else walk(curDir, nextStep, curPos +: visited, g)
+      if isPosOutOfBounds(nextStep, g) then (visited.updated(curPos, visited.getOrElse(curPos, 0) + 1), false)
+      else if isLoop(visited) then (visited, true)
+      else if isNextStepClear(nextStep, g) then walk(turnRight(curDir), curPos, visited, g)
+      else walk(curDir, nextStep, visited.updated(curPos, visited.getOrElse(curPos, 0) + 1), g)
 
    }
 
-   //println(s"1: ${walk(Direction.North, startPos, Nil)._1}")
-   println(s"2: ${walk(Direction.North, startPos, Nil, modGrid)._2}")
+   val path = walk(Direction.North, startPos, Map(startPos -> 0))
+
+   val r = path._1.keySet
+      .filterNot(_ == startPos)
+      .map(blockPos => (blockPos, walk(Direction.North, startPos, Map(startPos -> -1), modGrid(blockPos))))
+
+   println(s"1: ${path._1.keySet.size}")
+   println(s"2: ${r.count(res => res._2._2)}")
 
 }
