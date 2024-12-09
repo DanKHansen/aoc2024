@@ -31,7 +31,7 @@ def day6(): Unit = {
       case Direction.West  => Direction.North
 
    def isLoop(m: Map[Position, Int]): Boolean =
-      // hardcoded vale of crossings in original path (4) ...
+      // hardcoded value of crossings in original path (4) ...
       m.values.exists(_ > 4)
 
    def modGrid(p: Position) = grid.updated(p._1, grid(p._1).updated(p._2, 'X'))
