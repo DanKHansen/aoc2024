@@ -10,7 +10,7 @@ def day8(): Unit = {
    case class Antenna(freq: Char, pos: Pos)
 
    case class Pos(pos: Int, line: Int) {
-      @targetName("add")
+      @targetName("addition")
       def +(d: Distance): Pos =
          Pos(pos + d.deltaX, line + d.deltaY)
       def DistanceTo(other: Pos): Distance =
