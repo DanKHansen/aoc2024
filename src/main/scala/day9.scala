@@ -8,8 +8,8 @@ def day9(): Unit = {
    val parsed = list.map { case (fileSize, idx) =>
       val size = fileSize.head.toString.toLong
       val repeatCount = if (fileSize.length == 1) 0L else fileSize.last.toString.toLong
-      idx.toString * size.toInt + "." * repeatCount.toInt
-   }.mkString
+      (((idx.toString + " ") * size.toInt).split(" ").toList, ("." * repeatCount.toInt).toList)
+   }.toVector
 
    def moveFilesFromBackToEmpty(s: String): String = {
       @tailrec
@@ -21,10 +21,10 @@ def day9(): Unit = {
       loop(s)
    }
 
-   println(parsed)
+   parsed.map(_.toString.mkString) foreach println
 
-   def checkSum(v: Vector[(Char, Long)]) = v.map(p => p._1.toString.toLong * p._2).sum
+   // def checkSum(v: Vector[(Char, Long)]) = v.map(p => p._1.toString.toLong * p._2).sum
 
-   //println(s"1: ${checkSum(moveFilesFromBackToEmpty(parsed).zipWithIndex.toVector.map(p => (p._1,p._2.toLong)))}")
+   // println(s"1: ${checkSum(moveFilesFromBackToEmpty(parsed).zipWithIndex.toVector.map(p => (p._1,p._2.toLong)))}")
    // println(s"2: ${}")
 }
