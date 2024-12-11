@@ -2,9 +2,10 @@ import scala.annotation.tailrec
 
 @main
 def day9(): Unit = {
-   val src = getSource("9.txt")
+   type Segment = List[String]
+   val src = getSource("9_test.txt")
    val list = src.mkString.grouped(2).zipWithIndex
-   val parsed = list.flatMap { case (fileSize, idx) =>
+   val parsed: Segment = list.flatMap { case (fileSize, idx) =>
       val size = fileSize.head.asDigit
       val dotRepeat = if (fileSize.length == 1) 0 else fileSize.last.asDigit
       val idxString = (idx.toString + " ") * size
@@ -12,25 +13,49 @@ def day9(): Unit = {
       (idxString + dots).split(" ")
    }.toList
 
-   def moveFilesFromBackToEmpty(l: List[String]): List[String] = {
-      @tailrec
-      def loop(in: List[String]): List[String] = {
-         val idxOfFirstDot = in.indexOf(".")
-         val lastNonDot = in.filterNot(_ == ".").lastOption
-         lastNonDot match {
-            case Some(last) =>
-               val idxOfLastNumber = in.lastIndexOf(last)
-               if idxOfFirstDot >= idxOfLastNumber then in
-               else
-                  val next = in.updated(idxOfFirstDot, last).updated(idxOfLastNumber, ".")
-                  loop(next)
-            case None => in
+
+   def segments(inputList: Segment): List[Segment] = {
+      var result = List[List[String]]()
+      var currentSection = List[String]()
+      for (item <- inputList) {
+         if (currentSection.isEmpty || currentSection.last == item) {
+            currentSection = currentSection :+ item
+         } else {
+            result = result :+ currentSection
+            currentSection = List(item)
          }
       }
-      loop(l)
+      if (currentSection.nonEmpty) {
+         result = result :+ currentSection
+      }
+      result
    }
 
-   def moveFilesForward(l: List[String]): List[String] = ???
+   def moveFilesFromBackToEmpty(disk: List[String]): List[String] = {
+      @tailrec
+      def loop(l: List[String]): List[String] = {
+         val idxOfFirstDot = l.indexOf(".")
+         val lastNonDot = l.filterNot(_ == ".").lastOption
+         lastNonDot match {
+            case Some(last) =>
+               val idxOfLastNumber = l.lastIndexOf(last)
+               if idxOfFirstDot >= idxOfLastNumber then l
+               else
+                  val next = l.updated(idxOfFirstDot, last).updated(idxOfLastNumber, ".")
+                  loop(next)
+            case None => l
+         }
+      }
+      loop(disk)
+   }
+
+//   def moveFilesForward(ss: List[Segment]): List[String] = {
+//      @tailrec
+//      def loop(in : List[Segment]): List[String] = ???
+//
+//      loop(ss)
+//   }
+
 
    def multiply(p: (String, Int)): Long =
       val (str, num) = p
