@@ -4,27 +4,33 @@ import scala.annotation.tailrec
 def day9(): Unit = {
    val src = getSource("9.txt")
    val list = src.mkString.grouped(2).zipWithIndex
-
-   val parsed = list.map { case (fileSize, idx) =>
-      val size = fileSize.head.toString.toLong
-      val repeatCount = if (fileSize.length == 1) 0L else fileSize.last.toString.toLong
-      (((idx.toString + " ") * size.toInt).split(" ").toList, ("." * repeatCount.toInt).toList)
-   }.toVector
-
-   def moveFilesFromBackToEmpty(s: String): String = {
-      @tailrec
-      def loop(in: String): String = {
-         val replaceString = in.lastOption.getOrElse(' ').toString
-         val next = in.replaceFirst("\\.", replaceString).dropRight(1)
-         if (next.contains('.')) loop(next) else next
+   val parsed = list
+      .map { case (fileSize, idx) =>
+         val size = fileSize.head.toString.toInt
+         val repeatCount = if (fileSize.length == 1) 0 else fileSize.last.toString.toInt
+         ((idx.toString + " ") * size).split(" ") ++ ("." * repeatCount)
       }
-      loop(s)
+      .flatMap(_.toList)
+      .map(_.toString)
+      .toList
+
+   def moveFilesFromBackToEmpty(l: List[String]): List[String] = {
+      @tailrec
+      def loop(in: List[String]): List[String] = {
+         val idxOfLastNumber = in.lastIndexOf(in.filterNot(_ == ".").last)
+         val idxOfFirstDot = in.indexOf(".")
+         if idxOfFirstDot < idxOfLastNumber then {
+            val next = in.updated(idxOfFirstDot, in(idxOfLastNumber)).updated(idxOfLastNumber, ".")
+            loop(next)
+         } else in
+      }
+      loop(l)
    }
 
-   parsed.map(_.toString.mkString) foreach println
+   def multiply(p: (String, Int)): Long = p._1.toLong * p._2
 
-   // def checkSum(v: Vector[(Char, Long)]) = v.map(p => p._1.toString.toLong * p._2).sum
+   def checkSum(l: List[(String, Int)]) = l.map(multiply).sum
 
-   // println(s"1: ${checkSum(moveFilesFromBackToEmpty(parsed).zipWithIndex.toVector.map(p => (p._1,p._2.toLong)))}")
+   println(s"1: ${checkSum(moveFilesFromBackToEmpty(parsed).filterNot(_ ==".").zipWithIndex)}")
    // println(s"2: ${}")
 }
