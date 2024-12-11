@@ -3,9 +3,11 @@ import scala.annotation.tailrec
 @main
 def day9(): Unit = {
    type Segment = List[String]
+   type SegList = List[Segment]
+
    val src = getSource("9_test.txt")
    val list = src.mkString.grouped(2).zipWithIndex
-   val parsed: Segment = list.flatMap { case (fileSize, idx) =>
+   val parsed = list.flatMap { case (fileSize, idx) =>
       val size = fileSize.head.asDigit
       val dotRepeat = if (fileSize.length == 1) 0 else fileSize.last.asDigit
       val idxString = (idx.toString + " ") * size
@@ -13,49 +15,42 @@ def day9(): Unit = {
       (idxString + dots).split(" ")
    }.toList
 
-
-   def segments(inputList: Segment): List[Segment] = {
-      var result = List[List[String]]()
-      var currentSection = List[String]()
-      for (item <- inputList) {
-         if (currentSection.isEmpty || currentSection.last == item) {
-            currentSection = currentSection :+ item
+   def segments(segList: Segment): SegList =
+      segList.foldLeft(List.empty[Segment] -> List.empty[String]) { case ((sl, seg), s) =>
+         if (seg.isEmpty || seg.last == s) {
+            (sl, seg :+ s)
          } else {
-            result = result :+ currentSection
-            currentSection = List(item)
+            (sl :+ seg, List(s))
          }
+      } match {
+         case (sl, seg) =>
+            if (seg.nonEmpty) sl :+ seg else sl
       }
-      if (currentSection.nonEmpty) {
-         result = result :+ currentSection
-      }
-      result
-   }
 
-   def moveFilesFromBackToEmpty(disk: List[String]): List[String] = {
+   def moveSegmentBackToEmpty(seg: Segment): Segment = {
       @tailrec
-      def loop(l: List[String]): List[String] = {
-         val idxOfFirstDot = l.indexOf(".")
+      def loop(l: Segment): Segment = {
+         val firstDotIdx = l.indexOf(".")
          val lastNonDot = l.filterNot(_ == ".").lastOption
          lastNonDot match {
-            case Some(last) =>
-               val idxOfLastNumber = l.lastIndexOf(last)
-               if idxOfFirstDot >= idxOfLastNumber then l
+            case Some(str) =>
+               val lastNumIdx = l.lastIndexOf(str)
+               if firstDotIdx >= lastNumIdx then l
                else
-                  val next = l.updated(idxOfFirstDot, last).updated(idxOfLastNumber, ".")
-                  loop(next)
+                  val newL = l.updated(firstDotIdx, str).updated(lastNumIdx, ".")
+                  loop(newL)
             case None => l
          }
       }
-      loop(disk)
+      loop(seg)
    }
 
-//   def moveFilesForward(ss: List[Segment]): List[String] = {
+//   def moveSegmentsForward(segList: SegList): Segment = {
 //      @tailrec
-//      def loop(in : List[Segment]): List[String] = ???
+//      def loop(in : SegList): Segment = ???
 //
 //      loop(ss)
 //   }
-
 
    def multiply(p: (String, Int)): Long =
       val (str, num) = p
@@ -65,6 +60,6 @@ def day9(): Unit = {
 
    def checkSum(l: List[(String, Int)]) = l.map(multiply).sum
 
-   println(s"1: ${checkSum(moveFilesFromBackToEmpty(parsed).filterNot(_ == ".").zipWithIndex)}")
-   //println(s"2: ${checkSum(moveFilesForward(parsed).zipWithIndex)}")
+   println(s"1: ${checkSum(moveSegmentBackToEmpty(parsed).filterNot(_ == ".").zipWithIndex)}")
+   // println(s"2: ${checkSum(moveFilesForward(parsed).zipWithIndex)}")
 }
