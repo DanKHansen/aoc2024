@@ -20,22 +20,26 @@ def day9(): Unit = {
          lastNonDot match {
             case Some(last) =>
                val idxOfLastNumber = in.lastIndexOf(last)
-               if (idxOfFirstDot < idxOfLastNumber) {
+               if idxOfFirstDot >= idxOfLastNumber then in
+               else
                   val next = in.updated(idxOfFirstDot, last).updated(idxOfLastNumber, ".")
                   loop(next)
-               } else {
-                  in
-               }
             case None => in
          }
       }
       loop(l)
    }
 
-   def multiply(p: (String, Int)): Long = p._1.toLong * p._2
+   def moveFilesForward(l: List[String]): List[String] = ???
+
+   def multiply(p: (String, Int)): Long =
+      val (str, num) = p
+      str match
+         case "." => 0L
+         case _   => str.toLong * num
 
    def checkSum(l: List[(String, Int)]) = l.map(multiply).sum
 
    println(s"1: ${checkSum(moveFilesFromBackToEmpty(parsed).filterNot(_ == ".").zipWithIndex)}")
-   // println(s"2: ${}")
+   //println(s"2: ${checkSum(moveFilesForward(parsed).zipWithIndex)}")
 }
