@@ -6,8 +6,8 @@ def day9(): Unit = {
    type Segment = List[Block]
    type SegList = List[Segment]
 
-   val src: Segment = getSource("9_test.txt")
-   val list: Iterator[Block] = src.mkString.grouped(2)
+   val src = getSource("9.txt").mkString
+   val list = src.grouped(2).toVector
    lazy val parsed: List[Block] = list.zipWithIndex.flatMap { case (block, index) =>
       val fileSize = block.head.asDigit
       val repeat = if (block.length == 1) 0 else block.last.asDigit
