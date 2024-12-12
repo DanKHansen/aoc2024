@@ -7,13 +7,14 @@ def day9(): Unit = {
 
    val src = getSource("9_test.txt")
    val list = src.mkString.grouped(2).zipWithIndex
-   val parsed = list.flatMap { case (fileSize, idx) =>
+   lazy val parsed = list.flatMap { case (fileSize, idx) =>
       val size = fileSize.head.asDigit
       val dotRepeat = if (fileSize.length == 1) 0 else fileSize.last.asDigit
       val idxString = (idx.toString + " ") * size
       val dots = ". " * dotRepeat
       (idxString + dots).split(" ")
    }.toList
+   lazy val disk: SegList = segments(parsed)
 
    def segments(segList: Segment): SegList =
       segList.foldLeft(List.empty[Segment] -> List.empty[String]) { case ((sl, seg), s) =>
@@ -45,12 +46,32 @@ def day9(): Unit = {
       loop(seg)
    }
 
-//   def moveSegmentsForward(segList: SegList): Segment = {
-//      @tailrec
-//      def loop(in : SegList): Segment = ???
-//
-//      loop(ss)
-//   }
+   def moveSegmentsForward(dsk: SegList): Segment = {
+      @tailrec
+      def loop(in: SegList, idx: Int): Segment =
+         val usedSlots = in.filterNot(_.forall(_ == "."))
+         val freeSlots = in.filter(_.forall(_ == ".")).takeWhile(in.indexOf(_) < in.indexOf(usedSlots(idx)))
+         if freeSlots.isEmpty || idx == 0 then in.flatten
+         else
+            val availableSlots = freeSlots.filter(_.size >= usedSlots(idx).size)
+            if availableSlots.isEmpty then loop(in, idx - 1)
+            else
+               val newSlot =
+                  if usedSlots(idx).size < availableSlots.head.size then
+                     usedSlots(idx).padTo(availableSlots.head.size, '.').map(_.toString)
+                  else usedSlots(idx)
+               val newDisk: SegList = segments(
+                 in.updated(in.indexOf(availableSlots.head), newSlot)
+                    .updated(
+                      in.indexOf(usedSlots(idx)),
+                      usedSlots(idx)
+                         .patch(0, "." * usedSlots(idx).size, 10)
+                         .map(_.toString))
+                    .flatten)
+               loop(newDisk, idx - 1)
+      loop(dsk, dsk.filterNot(_.flatten.contains('.')).length - 1)
+   }
+
 
    def multiply(p: (String, Int)): Long =
       val (str, num) = p
@@ -61,5 +82,5 @@ def day9(): Unit = {
    def checkSum(l: List[(String, Int)]) = l.map(multiply).sum
 
    println(s"1: ${checkSum(moveSegmentBackToEmpty(parsed).filterNot(_ == ".").zipWithIndex)}")
-   // println(s"2: ${checkSum(moveFilesForward(parsed).zipWithIndex)}")
+   println(s"2: ${checkSum(moveSegmentsForward(disk).zipWithIndex)}")
 }
