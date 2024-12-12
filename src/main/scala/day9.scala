@@ -2,85 +2,81 @@ import scala.annotation.tailrec
 
 @main
 def day9(): Unit = {
-   type Segment = List[String]
+   type Block = String
+   type Segment = List[Block]
    type SegList = List[Segment]
 
-   val src = getSource("9_test.txt")
-   val list = src.mkString.grouped(2).zipWithIndex
-   lazy val parsed = list.flatMap { case (fileSize, idx) =>
-      val size = fileSize.head.asDigit
-      val dotRepeat = if (fileSize.length == 1) 0 else fileSize.last.asDigit
-      val idxString = (idx.toString + " ") * size
-      val dots = ". " * dotRepeat
-      (idxString + dots).split(" ")
+   val src: Segment = getSource("9_test.txt")
+   val list: Iterator[Block] = src.mkString.grouped(2)
+   lazy val parsed: List[Block] = list.zipWithIndex.flatMap { case (block, index) =>
+      val fileSize = block.head.asDigit
+      val repeat = if (block.length == 1) 0 else block.last.asDigit
+      val idx = (index.toString + " ") * fileSize
+      val dots = ". " * repeat
+      (idx + dots).split(" ")
    }.toList
-   lazy val disk: SegList = segments(parsed)
 
-   def segments(segList: Segment): SegList =
-      segList.foldLeft(List.empty[Segment] -> List.empty[String]) { case ((sl, seg), s) =>
-         if (seg.isEmpty || seg.last == s) {
-            (sl, seg :+ s)
-         } else {
-            (sl :+ seg, List(s))
-         }
-      } match {
-         case (sl, seg) =>
-            if (seg.nonEmpty) sl :+ seg else sl
-      }
-
-   def moveSegmentBackToEmpty(seg: Segment): Segment = {
+   def segments(segment: Segment): SegList = {
+      def foldLeft(sl: SegList, s: Segment, b: Block): (SegList, Segment) =
+         if (s.isEmpty || s.last == b) (sl, s :+ b)
+         else (sl :+ s, List(b))
       @tailrec
-      def loop(l: Segment): Segment = {
-         val firstDotIdx = l.indexOf(".")
-         val lastNonDot = l.filterNot(_ == ".").lastOption
+      def loop(sl: SegList, bl: Segment, acc: Segment): SegList =
+         acc match {
+            case Nil     => if (bl.nonEmpty) sl :+ bl else sl
+            case b :: bs => loop(foldLeft(sl, bl, b)._1, foldLeft(sl, bl, b)._2, bs)
+         }
+      loop(List.empty[Segment], List.empty[String], segment)
+   }
+
+   def moveBlocksForward(segment: Segment): Segment = {
+      @tailrec
+      def loop(s: Segment): Segment = {
+         val firstDotIdx = s.indexOf(".")
+         val lastNonDot = s.filterNot(_ == ".").lastOption
          lastNonDot match {
-            case Some(str) =>
-               val lastNumIdx = l.lastIndexOf(str)
-               if firstDotIdx >= lastNumIdx then l
+            case Some(b) =>
+               val lastNumIdx = s.lastIndexOf(b)
+               if firstDotIdx >= lastNumIdx then s
                else
-                  val newL = l.updated(firstDotIdx, str).updated(lastNumIdx, ".")
-                  loop(newL)
-            case None => l
+                  val newS = s.updated(firstDotIdx, b).updated(lastNumIdx, ".")
+                  loop(newS)
+            case None => s
          }
       }
-      loop(seg)
+      loop(segment)
    }
 
-   def moveSegmentsForward(dsk: SegList): Segment = {
+   def moveSegmentsForward(segmentList: SegList): Segment = {
       @tailrec
-      def loop(in: SegList, idx: Int): Segment =
-         val usedSlots = in.filterNot(_.forall(_ == "."))
-         val freeSlots = in.filter(_.forall(_ == ".")).takeWhile(in.indexOf(_) < in.indexOf(usedSlots(idx)))
-         if freeSlots.isEmpty || idx == 0 then in.flatten
-         else
-            val availableSlots = freeSlots.filter(_.size >= usedSlots(idx).size)
-            if availableSlots.isEmpty then loop(in, idx - 1)
-            else
-               val newSlot =
-                  if usedSlots(idx).size < availableSlots.head.size then
-                     usedSlots(idx).padTo(availableSlots.head.size, '.').map(_.toString)
-                  else usedSlots(idx)
-               val newDisk: SegList = segments(
-                 in.updated(in.indexOf(availableSlots.head), newSlot)
-                    .updated(
-                      in.indexOf(usedSlots(idx)),
-                      usedSlots(idx)
-                         .patch(0, "." * usedSlots(idx).size, 10)
-                         .map(_.toString))
-                    .flatten)
-               loop(newDisk, idx - 1)
-      loop(dsk, dsk.filterNot(_.flatten.contains('.')).length - 1)
+      def loop(sl: SegList, idx: Int): Segment = {
+         val used = sl.filterNot(_.forall(_ == "."))
+         val free = sl.filter(_.forall(_ == ".")).takeWhile(sl.indexOf(_) < sl.indexOf(used(idx)))
+         if (free.isEmpty || idx == 0) sl.flatten
+         else {
+            val avail = free.filter(_.size >= used(idx).size)
+            avail match {
+               case Nil => loop(sl, idx - 1)
+               case head :: _ =>
+                  val segment = used(idx).padTo(head.size, ".")
+                  val newSegList = sl
+                     .updated(sl.indexOf(head), segment)
+                     .updated(sl.indexOf(used(idx)), List.fill(used(idx).size)("."))
+                  loop(segments(newSegList.flatten), idx - 1)
+            }
+         }
+      }
+      loop(segmentList, segmentList.filterNot(_.forall(_ == ".")).length - 1)
    }
 
-
-   def multiply(p: (String, Int)): Long =
-      val (str, num) = p
-      str match
+   def multiply(pair: (Block, Int)): Long =
+      val (b, n) = pair
+      b match
          case "." => 0L
-         case _   => str.toLong * num
+         case _   => b.toLong * n
 
-   def checkSum(l: List[(String, Int)]) = l.map(multiply).sum
+   def checkSum(segment: Segment) = segment.zipWithIndex.map(multiply).sum
 
-   println(s"1: ${checkSum(moveSegmentBackToEmpty(parsed).filterNot(_ == ".").zipWithIndex)}")
-   println(s"2: ${checkSum(moveSegmentsForward(disk).zipWithIndex)}")
+   println(s"1: ${checkSum(moveBlocksForward(parsed).filterNot(_ == "."))}")
+   println(s"2: ${checkSum(moveSegmentsForward(segments(parsed)))}")
 }
