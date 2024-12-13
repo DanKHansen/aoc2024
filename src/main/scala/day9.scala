@@ -2,81 +2,85 @@ import scala.annotation.tailrec
 
 @main
 def day9(): Unit = {
-   type Block = String
-   type Segment = List[Block]
-   type SegList = List[Segment]
+   type Disk = Seq[Option[Int]]
+   type Disk2 = Seq[Block]
 
-   val src = getSource("9.txt").mkString
-   val list = src.grouped(2).toVector
-   lazy val parsed: List[Block] = list.zipWithIndex.flatMap { case (block, index) =>
-      val fileSize = block.head.asDigit
-      val repeat = if (block.length == 1) 0 else block.last.asDigit
-      val idx = (index.toString + " ") * fileSize
-      val dots = ". " * repeat
-      (idx + dots).split(" ")
-   }.toList
+   enum Block(val size: Int):
+      case Free(s: Int) extends Block(s)
+      case File(s: Int, i: Int) extends Block(s)
 
-   def segments(segment: Segment): SegList = {
-      def foldLeft(sl: SegList, s: Segment, b: Block): (SegList, Segment) =
-         if (s.isEmpty || s.last == b) (sl, s :+ b)
-         else (sl :+ s, List(b))
+      def index: Option[Int] = this match
+         case Free(_)     => None
+         case File(_, id) => Some(id)
+
+      def canInsert(block: Block): Boolean = this match
+         case Free(size) => size >= block.size
+         case _          => false
+
+   extension (free: Block.Free)
+      def insert(b: Block): Seq[Block] =
+         if b.size < free.size then Seq(b, Block.Free(free.size - b.size))
+         else Seq(b)
+
+   extension (disk: Disk)
+      def checksum: Long = disk.zipWithIndex
+         .map(_.getOrElse(0).toLong * _)
+         .sum
+
+   extension (disk2: Disk2)
+      def checksum2: Long = disk2
+         .flatMap(b => Vector.fill(b.size)(b.index.getOrElse(0)))
+         .zipWithIndex
+         .map(_.toLong * _)
+         .sum
+
+   def createDisk(input: String): Disk =
+      input.toList
+         .map(_.asDigit)
+         .grouped(2)
+         .toVector
+         .zipWithIndex
+         .flatMap:
+            case (List(file, free), idx) => List.fill(file)(Some(idx)) ::: List.fill(free)(None)
+            case (List(file), idx)       => List.fill(file)(Some(idx))
+            case _                       => Nil
+   def createDisk2(input: String): Disk2 =
+      input.toList
+         .map(_.asDigit)
+         .grouped(2)
+         .toVector
+         .zipWithIndex
+         .flatMap:
+            case (List(file, free), idx) => Vector(Block.File(file, idx), Block.Free(free))
+            case (List(file), idx)       => Vector(Block.File(file, idx))
+            case _                       => Nil
+
+   def moveBlocksForward(disk: Disk): Disk =
       @tailrec
-      def loop(sl: SegList, bl: Segment, acc: Segment): SegList =
-         acc match {
-            case Nil     => if (bl.nonEmpty) sl :+ bl else sl
-            case b :: bs => loop(foldLeft(sl, bl, b)._1, foldLeft(sl, bl, b)._2, bs)
-         }
-      loop(List.empty[Segment], List.empty[String], segment)
-   }
+      def loop(disk: Disk, acc: Disk, i: Int): Disk =
+         if disk.size <= 1 then acc
+         else
+            disk.head match
+               case None           => loop(disk.last +: disk.tail.init, acc, i+1)
+               case file @ Some(_) => loop(disk.tail, acc :+ file, i+1)
+      loop(disk, Vector.empty, 0)
 
-   def moveBlocksForward(segment: Segment): Segment = {
+   def moveFilesForward(disk: Disk2): Disk2 =
       @tailrec
-      def loop(s: Segment): Segment = {
-         val firstDotIdx = s.indexOf(".")
-         val lastNonDot = s.filterNot(_ == ".").lastOption
-         lastNonDot match {
-            case Some(b) =>
-               val lastNumIdx = s.lastIndexOf(b)
-               if firstDotIdx >= lastNumIdx then s
-               else
-                  val newS = s.updated(firstDotIdx, b).updated(lastNumIdx, ".")
-                  loop(newS)
-            case None => s
-         }
-      }
-      loop(segment)
-   }
+      def loop(disk: Disk2, acc: Disk2): Disk2 =
+         disk.lastOption match
+            case None                       => acc
+            case Some(last @ Block.Free(_)) => loop(disk.init, last +: acc)
+            case Some(last @ Block.File(_, _)) =>
+               disk.zipWithIndex.find((block, _) => block.canInsert(last)) match
+                  case None => loop(disk.init, last +: acc)
+                  case Some(free @ Block.Free(_), id) =>
+                     val newDisk = disk.take(id) ++ free.insert(last) ++ disk.drop(id + 1).init
+                     loop(newDisk, Block.Free(last.size) +: acc)
+                  case _ => Seq.empty
+      loop(disk, Vector.empty)
 
-   def moveSegmentsForward(segmentList: SegList): Segment = {
-      @tailrec
-      def loop(sl: SegList, idx: Int): Segment = {
-         val used = sl.filterNot(_.forall(_ == "."))
-         val free = sl.filter(_.forall(_ == ".")).takeWhile(sl.indexOf(_) < sl.indexOf(used(idx)))
-         if (free.isEmpty || idx == 0) sl.flatten
-         else {
-            val avail = free.filter(_.size >= used(idx).size)
-            avail match {
-               case Nil => loop(sl, idx - 1)
-               case head :: _ =>
-                  val segment = used(idx).padTo(head.size, ".")
-                  val newSegList = sl
-                     .updated(sl.indexOf(head), segment)
-                     .updated(sl.indexOf(used(idx)), List.fill(used(idx).size)("."))
-                  loop(segments(newSegList.flatten), idx - 1)
-            }
-         }
-      }
-      loop(segmentList, segmentList.filterNot(_.forall(_ == ".")).length - 1)
-   }
-
-   def multiply(pair: (Block, Int)): Long =
-      val (b, n) = pair
-      b match
-         case "." => 0L
-         case _   => b.toLong * n
-
-   def checkSum(segment: Segment) = segment.zipWithIndex.map(multiply).sum
-
-   println(s"1: ${checkSum(moveBlocksForward(parsed).filterNot(_ == "."))}")
-   println(s"2: ${checkSum(moveSegmentsForward(segments(parsed)))}")
+   val metadata = getSource("9.txt").mkString
+   println(s"1: ${moveBlocksForward(createDisk(metadata)).checksum}")
+   println(s"2: ${moveFilesForward(createDisk2(metadata)).checksum2}")
 }
