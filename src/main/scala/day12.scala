@@ -5,6 +5,14 @@ def day12(): Unit = {
    def adjacent(x: Int, y: Int): List[(Int, Int)] =
       List((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))
 
+   def neighbors(ix: Int, iy: Int): List[(Int, Int)] = {
+      (ix - 1 to ix + 1).flatMap {x =>
+         (iy - 1 to iy + 1).flatMap {y =>
+            Option.when(x != ix || y != iy)((x, y))
+         }
+      }.toList
+   }
+
    case class PlantMap(plants: Vector[String]) {
       val height: Int = plants.size
       val width: Int = plants.head.length
@@ -16,6 +24,11 @@ def day12(): Unit = {
             x <- 0 until width
             y <- 0 until height
          yield (x, y)).toVector
+
+
+      def optionalNeighbors(x: Int, y: Int): List[Option[Char]] = {
+         neighbors(x, y).map(get)
+      }
       def floodFill(x: Int, y: Int): Region =
          val q = scala.collection.mutable.Queue[(Int, Int)]()
          val char = apply(x, y)
@@ -48,11 +61,25 @@ def day12(): Unit = {
       def perimeter: Int =
          val regionMap = region.asPlantMap
          region.map((x, y) => regionMap.optionalAdjacent(x, y).count(_.forall(_ != '#'))).sum
+      def inflate: Region = {
+         region.flatMap((x, y) => List((x * 2, y * 2), (x * 2 + 1, y * 2), (x * 2, y * 2 + 1), (x * 2 + 1, y * 2 + 1)))
+      }
+      def sides: Int = {
+         val bigRegion = region.inflate
+         val regionMap = bigRegion.asPlantMap
+         bigRegion.count { (x, y) =>
+            val neighborCount = regionMap.optionalNeighbors(x, y).count(_.contains('#'))
+            neighborCount match {
+               case 3 | 4 | 7 => true
+               case _ => false
+            }
+         }
+      }
    }
 
    val map = PlantMap(getSource("12.txt").toVector)
 
 
    println(s"1: ${map.regions.map(r => r.area * r.perimeter).sum}")
-   // println(s"2: ${}")
+   println(s"2: ${map.regions.map(r => r.area * r.sides).sum}")
 }
