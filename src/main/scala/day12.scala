@@ -32,17 +32,17 @@ def day12(): Unit = {
          def loop(queue: List[(Int, Int)], visited: Set[(Int, Int)]): Set[(Int, Int)] =
             queue match {
                case Nil => visited
+               case head :: tail if !get(head._1, head._2).contains(char) || visited.contains(head) =>
+                  loop(tail, visited)
                case head :: tail =>
-                  if !get(head._1, head._2).contains(char) || visited.contains(head) then loop(tail, visited)
-                  else
-                     val newVisited = visited + head
-                     val newQueue = tail ++ adjacent(head._1, head._2)
-                     loop(newQueue, newVisited)
+                  val newVisited = visited + head
+                  val newQueue = tail ++ adjacent(head._1, head._2)
+                  loop(newQueue, newVisited)
             }
          loop(List((x, y)), Set.empty).toVector
       def optionalAdjacent(x: Int, y: Int): List[Option[Char]] = adjacent(x, y).map(get)
       def regions: List[Region] =
-         List.unfold[Vector[(Int, Int)], Vector[(Int, Int)]](this.indices): acc =>
+         List.unfold(this.indices): acc =>
             acc.headOption.map: head =>
                val points = floodFill(head._1, head._2)
                (points, acc.diff(points))
@@ -64,7 +64,11 @@ def day12(): Unit = {
          val regionMap = region.asPlantMap
          region.map((x, y) => regionMap.optionalAdjacent(x, y).count(_.forall(_ != '#'))).sum
       def inflate: Region =
-         region.flatMap((x, y) => List((x * 2, y * 2), (x * 2 + 1, y * 2), (x * 2, y * 2 + 1), (x * 2 + 1, y * 2 + 1)))
+         for {
+            (x, y) <- region
+            dx <- 0 to 1
+            dy <- 0 to 1
+         } yield (x * 2 + dx, y * 2 + dy)
       def sides: Int =
          val bigRegion = region.inflate
          val regionMap = bigRegion.asPlantMap
