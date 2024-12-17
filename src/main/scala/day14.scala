@@ -1,7 +1,9 @@
-@main
-def day14(): Unit = {
-   val src = getSource("14_test.txt")
+object day14 {
 
-   println(s"1: ${}")
-   println(s"2: ${}")
+   def main(args: Array[String]): Unit = {
+      val src = getSource("14_test.txt")
+
+      println(s"1: ${}")
+      println(s"2: ${}")
+   }
 }
