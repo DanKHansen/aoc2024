@@ -1,3 +1,4 @@
+import sources._
 import scala.util.Try
 object day4 {
    def main(args: Array[String]): Unit = {

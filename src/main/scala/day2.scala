@@ -1,3 +1,4 @@
+import sources._
 object day2 {
    def main(args: Array[String]): Unit =
       val reports = getSource("2.txt").map(_.split(" ").toList.map(_.toInt))
