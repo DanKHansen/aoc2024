@@ -1,3 +1,4 @@
+import java.io.FileNotFoundException
 import scala.util.{Failure, Success, Try}
 object sources {
    def getSource(fileName: String): List[String] = {
@@ -10,6 +11,6 @@ object sources {
             val input = file.getLines().toList
             file.close()
             input
-         case Failure(_) => Nil
+         case Failure(e) => throw new FileNotFoundException(e.getMessage)
    }
 }
