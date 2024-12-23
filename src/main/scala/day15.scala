@@ -11,13 +11,16 @@ object day15:
          case UP, DOWN, RIGHT, LEFT
 
       enum TileType:
-         case WALL, FREE, BOX
+         case WALL, FREE, BOX, ROBOT, LEFT, RIGHT
 
       object TileType:
          def apply(c: Char): TileType = c match
             case '#' => WALL
             case 'O' => BOX
-            case _   => FREE
+            case '.' => FREE
+            case '@' => ROBOT
+            case '[' => LEFT
+            case ']' => RIGHT
 
       object Direction:
          val offsets: Map[Direction, Pos] = Map(
@@ -56,24 +59,20 @@ object day15:
             case Nil => currWH
             case dir :: tail =>
                val next = moveFrom(currPos, dir)
-               tileType(next, currWH) match
-                  case TileType.WALL => go(currPos, tail, currWH)
-                  case TileType.FREE => go(next, tail, currWH)
-                  case TileType.BOX =>
-                     val boxes = makeBoxList(currPos, dir, currWH)
-                     if boxes.length > 1 then
-                        val newWH = updateWH(boxes, currWH)
-                        go(next, tail, newWH)
-                     else go(currPos, tail, currWH)
+               val boxes = makeBoxList(currPos, dir, currWH)
+               (tileType(next, currWH), boxes.length > 1) match
+                  case (TileType.FREE, _)   => go(next, tail, currWH)
+                  case (TileType.BOX, true) => go(next, tail, updateWH(boxes, currWH))
+                  case _                    => go(currPos, tail, currWH)
 
       def makeBoxList(headPos: Pos, dir: Direction, wh: Vector[Vector[Char]]): List[Pos] =
          @tailrec
          def loop(pos: Pos, acc: List[Pos]): List[Pos] =
             val next = moveFrom(pos, dir)
             tileType(next, wh) match
-               case TileType.WALL => Nil
                case TileType.FREE => next :: acc
                case TileType.BOX  => loop(next, next :: acc)
+               case _             => Nil
          headPos :: loop(headPos, Nil).reverse
 
       def updateWH(boxes: List[Pos], cWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
@@ -81,14 +80,11 @@ object day15:
          val nwh = cWH.updated(box1.lin, cWH(box1.lin).updated(box1.col, '.'))
          nwh.updated(box2.lin, nwh(box2.lin).updated(box2.col, 'O'))
 
-      def calculateGPS(wh: Vector[Vector[Char]]): Int = {
-         for
-            l <- wh.indices
-            c <- wh(l).indices
-         yield wh(l)(c) match
-            case 'O' => Some(Pos(l, c))
-            case _   => None
-      }.flatten.map(p => 100 * p.lin + p.col).sum
+      def calculateGPS(wh: Vector[Vector[Char]]): Int =
+         wh.indices
+            .flatMap(l => wh(l).indices.collect { case c if wh(l)(c) == 'O' => Pos(l, c) })
+            .map(p => 100 * p.lin + p.col)
+            .sum
 
       println(s"1: ${calculateGPS(go(startPos, steps, wh))}")
       // println(s"2: ${}")
