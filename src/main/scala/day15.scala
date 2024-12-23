@@ -1,4 +1,3 @@
-import com.sun.nio.sctp.ShutdownNotification
 import sources.*
 
 import scala.annotation.tailrec
@@ -11,17 +10,23 @@ object day15 {
       enum Direction:
          case UP, DOWN, RIGHT, LEFT
 
-      enum Tiletype:
+      enum TileType:
          case WALL, FREE, BOX
 
-      object Tiletype:
-         def apply(c: Char): Tiletype = c match {
+      object TileType:
+         def apply(c: Char): TileType = c match {
             case '#' => WALL
             case 'O' => BOX
             case _   => FREE
          }
 
       object Direction:
+         val offsets: Map[Direction, Pos] = Map(
+           UP -> Pos(-1, 0),
+           DOWN -> Pos(1, 0),
+           RIGHT -> Pos(0, 1),
+           LEFT -> Pos(0, -1)
+         )
          def apply(c: Char): Direction = c match {
             case '^' => UP
             case 'v' => DOWN
@@ -35,61 +40,48 @@ object day15 {
          (warehouse.map(_.toVector).toVector, attempts.mkString.toList.map(Direction(_)))
 
       val (initialWH, steps) = parse(src)
-      val startPos = {
-         for {
-            (line, lin) <- initialWH.zipWithIndex
-            col <- line.indexOf('@') match {
-               case -1 => None
-               case c  => Some(c)
-            }
-         } yield Pos(lin, col)
-      }.head
+      val startPos = initialWH.zipWithIndex.collectFirst {
+         case (col, lin) if col.contains('@') => Pos(lin, col.indexOf('@'))
+      }.get
       val wh = initialWH.updated(startPos.lin, initialWH(startPos.lin).updated(startPos.col, '.'))
 
-      def isWall(p: Pos, wh: Vector[Vector[Char]] = wh): Boolean =
-         Tiletype(wh(p.lin)(p.col)) == Tiletype.WALL
-
-      def isFree(p: Pos, wh: Vector[Vector[Char]] = wh): Boolean =
-         Tiletype(wh(p.lin)(p.col)) == Tiletype.FREE
-
-      def isBox(p: Pos, wh: Vector[Vector[Char]] = wh): Boolean =
-         Tiletype(wh(p.lin)(p.col)) == Tiletype.BOX
+      def tileType(p: Pos, wh: Vector[Vector[Char]]): TileType =
+         TileType(wh(p.lin)(p.col))
 
       def moveFrom(currPos: Pos, direction: Direction): Pos =
-         direction match
-            case Direction.UP    => Pos(currPos.lin - 1, currPos.col)
-            case Direction.DOWN  => Pos(currPos.lin + 1, currPos.col)
-            case Direction.RIGHT => Pos(currPos.lin, currPos.col + 1)
-            case Direction.LEFT  => Pos(currPos.lin, currPos.col - 1)
+         val offset = Direction.offsets(direction)
+         Pos(currPos.lin + offset.lin, currPos.col + offset.col)
 
       @tailrec
       def go(currPos: Pos, steps: List[Direction], currWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
-         if steps.isEmpty then {
-            // currWH.updated(currPos.lin, currWH(currPos.lin).updated(currPos.col, '@')) foreach println
-            currWH
-         } else
-            val next = moveFrom(currPos, steps.head)
-            next match {
-               case p if isWall(p, currWH) => go(currPos, steps.tail, currWH)
-               case p if isFree(p, currWH) => go(p, steps.tail, currWH)
-               case p if isBox(p, currWH) =>
-                  val boxes = makeBoxList(currPos, steps.head, currWH)
-                  if boxes.length > 1 then
-                     val newWH = updateWH(boxes, currWH)
-                     go(p, steps.tail, newWH)
-                  else go(currPos, steps.tail, currWH)
-            }
+         steps match {
+            case Nil => currWH
+            case dir :: tail =>
+               val next = moveFrom(currPos, dir)
+               tileType(next, currWH) match {
+                  case TileType.WALL => go(currPos, tail, currWH)
+                  case TileType.FREE => go(next, tail, currWH)
+                  case TileType.BOX =>
+                     val boxes = makeBoxList(currPos, dir, currWH)
+                     if boxes.length > 1 then
+                        val newWH = updateWH(boxes, currWH)
+                        go(next, tail, newWH)
+                     else go(currPos, tail, currWH)
+               }
+         }
 
-      def makeBoxList(headPos: Pos, dir: Direction, wh: Vector[Vector[Char]]): List[Pos] =
+      def makeBoxList(headPos: Pos, dir: Direction, wh: Vector[Vector[Char]]): List[Pos] = {
          @tailrec
-         def loop(pos: Pos, acc: List[Pos]): List[Pos] =
+         def loop(pos: Pos, acc: List[Pos]): List[Pos] = {
             val next = moveFrom(pos, dir)
-            next match {
-               case p if isWall(p, wh) => Nil
-               case p if isFree(p, wh) => p :: acc
-               case p if isBox(p, wh)  => loop(p, p :: acc)
+            tileType(next, wh) match {
+               case TileType.WALL => Nil
+               case TileType.FREE => next :: acc
+               case TileType.BOX  => loop(next, next :: acc)
             }
+         }
          headPos :: loop(headPos, Nil).reverse
+      }
 
       def updateWH(boxes: List[Pos], cWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
          val (box1, box2) = (boxes.tail.head, boxes.last)
