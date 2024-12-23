@@ -1,8 +1,8 @@
 import sources.*
 
 import scala.annotation.tailrec
-object day15 {
-   def main(args: Array[String]): Unit = {
+object day15:
+   def main(args: Array[String]): Unit =
       val src = getSource("15.txt")
 
       case class Pos(lin: Int, col: Int)
@@ -14,11 +14,10 @@ object day15 {
          case WALL, FREE, BOX
 
       object TileType:
-         def apply(c: Char): TileType = c match {
+         def apply(c: Char): TileType = c match
             case '#' => WALL
             case 'O' => BOX
             case _   => FREE
-         }
 
       object Direction:
          val offsets: Map[Direction, Pos] = Map(
@@ -27,12 +26,11 @@ object day15 {
            RIGHT -> Pos(0, 1),
            LEFT -> Pos(0, -1)
          )
-         def apply(c: Char): Direction = c match {
+         def apply(c: Char): Direction = c match
             case '^' => UP
             case 'v' => DOWN
             case '>' => RIGHT
             case '<' => LEFT
-         }
 
       def parse(in: List[String]) =
          val warehouse = in.takeWhile(_.nonEmpty)
@@ -54,11 +52,11 @@ object day15 {
 
       @tailrec
       def go(currPos: Pos, steps: List[Direction], currWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
-         steps match {
+         steps match
             case Nil => currWH
             case dir :: tail =>
                val next = moveFrom(currPos, dir)
-               tileType(next, currWH) match {
+               tileType(next, currWH) match
                   case TileType.WALL => go(currPos, tail, currWH)
                   case TileType.FREE => go(next, tail, currWH)
                   case TileType.BOX =>
@@ -67,21 +65,16 @@ object day15 {
                         val newWH = updateWH(boxes, currWH)
                         go(next, tail, newWH)
                      else go(currPos, tail, currWH)
-               }
-         }
 
-      def makeBoxList(headPos: Pos, dir: Direction, wh: Vector[Vector[Char]]): List[Pos] = {
+      def makeBoxList(headPos: Pos, dir: Direction, wh: Vector[Vector[Char]]): List[Pos] =
          @tailrec
-         def loop(pos: Pos, acc: List[Pos]): List[Pos] = {
+         def loop(pos: Pos, acc: List[Pos]): List[Pos] =
             val next = moveFrom(pos, dir)
-            tileType(next, wh) match {
+            tileType(next, wh) match
                case TileType.WALL => Nil
                case TileType.FREE => next :: acc
                case TileType.BOX  => loop(next, next :: acc)
-            }
-         }
          headPos :: loop(headPos, Nil).reverse
-      }
 
       def updateWH(boxes: List[Pos], cWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
          val (box1, box2) = (boxes.tail.head, boxes.last)
@@ -99,5 +92,3 @@ object day15 {
 
       println(s"1: ${calculateGPS(go(startPos, steps, wh))}")
       // println(s"2: ${}")
-   }
-}
