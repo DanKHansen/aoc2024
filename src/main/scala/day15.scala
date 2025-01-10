@@ -5,7 +5,7 @@ object day15:
    case class Pos(lin: Int, col: Int)
    
    def main(args: Array[String]): Unit =
-      val src = getSource("15_test2.txt")
+      val src = getSource("15_2_smalltest.txt")
 
       enum Direction:
          case UP, DOWN, RIGHT, LEFT, NE, SE, SW, NW
@@ -82,7 +82,7 @@ object day15:
 
       @tailrec
       def go(currPos: Pos, steps: List[Direction], currWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
-         currWH foreach println
+         currWH.map(_.mkString) foreach println
          steps match
             case Nil => currWH
             case dir :: tail =>
