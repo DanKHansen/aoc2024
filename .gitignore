@@ -43,6 +43,6 @@ build/
 
 ### Scala ###
 .bsp/
-/sources/*.txt
+/resources/*.txt
 /.idea/sbt.xml
 
