@@ -2,10 +2,10 @@ import sources.*
 
 import scala.annotation.tailrec
 object day15:
+   case class Pos(lin: Int, col: Int)
+   
    def main(args: Array[String]): Unit =
-      val src = getSource("15_2_smalltest.txt")
-
-      case class Pos(lin: Int, col: Int)
+      val src = getSource("15_test2.txt")
 
       enum Direction:
          case UP, DOWN, RIGHT, LEFT, NE, SE, SW, NW
@@ -91,7 +91,7 @@ object day15:
                (tileType(next, currWH), boxes.length > 1) match
                   case (TileType.FREE, _) => go(next, tail, currWH)
                   case (TileType.BOX, _) | (TileType.LEFT_SIDE, _) | (TileType.RIGHT_SIDE, _) =>
-                     go(next, tail, updateWH(boxes, currWH))
+                     go(next, tail, updateWH(dir, boxes, currWH))
                   case _ => go(currPos, tail, currWH)
 
       def makeBoxList(headPos: Pos, dir: Direction, wh: Vector[Vector[Char]]): List[Pos] =
@@ -105,15 +105,32 @@ object day15:
                case _ => Nil
          headPos :: loop(headPos, Nil).reverse
 
-      def updateWH(boxes: List[Pos], cWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
-         //println(s"Boxes: $boxes")
-         //println(tileType(boxes.tail.head, wh) == TileType.RIGHT_SIDE)
-         tileType(boxes.tail.head, wh) match
-            case TileType.BOX =>
+      def updateWH(dir: Direction, boxes: List[Pos], cWH: Vector[Vector[Char]]): Vector[Vector[Char]] =
+         @tailrec
+         def updHoriz(l: List[Pos], wh: Vector[Vector[Char]]): Vector[Vector[Char]] =
+            val c = if l.length % 2 == 0 then ']' else '['
+            if l.isEmpty then wh
+            else
+               val uWH = wh.updated(l.head.lin, wh(l.head.lin).updated(l.head.col, c))
+               updHoriz(l.tail, uWH)
+
+         //@tailrec
+         def updVert(l: List[Pos], wh: Vector[Vector[Char]]): Vector[Vector[Char]] =
+            println(l)
+            wh
+
+         (dir, tileType(boxes.tail.head, cWH)) match
+            case (_, TileType.BOX) =>
                val (box1, box2) = (boxes.tail.head, boxes.last)
                val nwh = cWH.updated(box1.lin, cWH(box1.lin).updated(box1.col, '.'))
                nwh.updated(box2.lin, nwh(box2.lin).updated(box2.col, 'O'))
-            case TileType.RIGHT_SIDE | TileType.LEFT_SIDE => cWH
+            case (Direction.LEFT | Direction.RIGHT, TileType.RIGHT_SIDE) |
+                (Direction.LEFT | Direction.RIGHT, TileType.LEFT_SIDE) =>
+               val nwh = cWH.updated(boxes.tail.head.lin, cWH(boxes.tail.head.lin).updated(boxes.tail.head.col, '.'))
+               updHoriz(boxes.drop(2), nwh)
+            case (Direction.UP | Direction.DOWN, TileType.RIGHT_SIDE) |
+                (Direction.UP | Direction.DOWN, TileType.LEFT_SIDE) =>
+               updVert(boxes, cWH)
             case _ => cWH
 
       def calculateGPS(wh: Vector[Vector[Char]]): Int =
